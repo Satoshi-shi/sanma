@@ -56,6 +56,19 @@
   .empty{text-align:center;color:var(--sub);padding:24px 0;font-size:14px}
   .done{text-align:center}
   .done .big{font-size:40px}
+  .rules h2{font-size:17px;text-align:center;margin:4px 0 2px}
+  .rules .sub{text-align:center;font-size:12px;color:var(--sub);margin-bottom:12px}
+  .rules h3{font-size:14px;color:var(--green);margin:18px 0 6px;padding-bottom:4px;border-bottom:1px solid var(--line)}
+  .rules p{margin:6px 0;line-height:1.7;font-size:14px}
+  .rules ol{margin:6px 0;padding-left:1.6em;line-height:1.7;font-size:14px}
+  .rules li{margin-bottom:4px}
+  .rules li b{display:block}
+  .rules .end{text-align:right;margin-top:16px;font-size:14px}
+  .badge{display:inline-block;font-size:10px;font-weight:700;padding:1px 6px;border-radius:999px;margin-left:4px;vertical-align:1px}
+  .badge.fin{background:var(--gold);color:#fff}
+  .badge.ok{background:var(--green-soft);color:var(--green)}
+  .badge.kanji{background:#e9e6f5;color:#5a4a9c}
+  tr.fin td{background:var(--gold-soft)}
   .loading{position:fixed;inset:0;background:rgba(244,241,234,.8);display:flex;align-items:center;justify-content:center;z-index:9;font-size:14px;color:var(--sub)}
 </style>
 </head>
@@ -125,12 +138,18 @@
       <div class="hint" id="sPeriod"></div>
     </div>
     <div class="card">
-      <div style="font-weight:700;margin-bottom:8px">🪙 コイン総合順位</div>
+      <div style="font-weight:700;margin-bottom:8px">🏅 メダル年間ランキング</div>
       <table>
-        <thead><tr><th>順位</th><th style="text-align:left">名前</th><th>コイン</th><th>増減</th><th>参加</th><th>トップ</th><th>ラス</th></tr></thead>
+        <thead><tr><th>順位</th><th style="text-align:left">名前</th><th>メダル</th><th>増減</th><th>参加日数</th><th>トップ</th><th>ラス</th></tr></thead>
         <tbody id="statsBody"></tbody>
       </table>
-      <div class="hint">全員 <b id="sStart"></b> 枚からスタート。トップ +1枚／ラス −1枚。コインが同じ場合は同順位。</div>
+      <div class="hint" style="line-height:1.7">
+        全員 <b id="sStart"></b> 枚からスタート。トップ +1枚／ラス −1枚。<br>
+        メダルが同じ場合は、参加日数が多い方が上位（第7条）。参加は日数で数えます（同じ日に複数回記録しても1回・第6条）。<br>
+        <span class="badge fin">決勝</span>決勝参加資格（<b id="sMin"></b>日以上参加）を満たした上位<b id="sFin"></b>名　
+        <span class="badge ok">資格</span>決勝参加資格あり　
+        <span class="badge kanji">幹事</span>下位<b id="sKanji"></b>名（第12条）
+      </div>
     </div>
   </section>
 
@@ -143,6 +162,124 @@
       <button class="btn sub" onclick="addOtherMember()">追加</button>
     </div>
   </section>
+  <!-- 規約 -->
+  <section id="tab-rules">
+    <div class="card rules">
+      <h2>仲間内年間麻雀ランキング大会 規約</h2>
+      <div class="sub">制定・運用規約</div>
+
+      <h3>第1条　大会の目的</h3>
+      <p>本大会は、仲間内で麻雀を楽しみながら、年間を通じた成績をメダルで管理し、毎年12月に開催する決勝戦によって年間チャンピオンを決定することを目的とする。</p>
+
+      <h3>第2条　参加資格</h3>
+      <ol>
+        <li>麻雀が好きであること。</li>
+        <li>大会専用のLINEグループに参加していること。</li>
+        <li>大会への参加意思を表明していること。</li>
+      </ol>
+
+      <h3>第3条　年間スケジュール</h3>
+      <ol>
+        <li>年間ランキングの対象期間は、毎年1月1日から11月30日までとする。</li>
+        <li>12月は年間ランキングの集計対象外とし、メダルの増減は行わない。</li>
+        <li>毎年12月に年間ランキング上位3名による決勝戦を開催する。</li>
+        <li>決勝戦当日は、決勝進出者以外のメンバーも、都合が合えば自由に麻雀を楽しむことができる。</li>
+        <li>12月の自由対局についてもメダルの増減は行わない。</li>
+      </ol>
+
+      <h3>第4条　メダルの初期設定</h3>
+      <ol>
+        <li>毎年1月の大会開始時に、参加者全員がメダル30枚を保有した状態でスタートする。</li>
+        <li>メダルは毎年リセットし、前年からの持ち越しは行わない。</li>
+        <li>メダルの保有枚数によって年間ランキングを決定する。</li>
+      </ol>
+
+      <h3>第5条　通常対局のルール</h3>
+      <ol>
+        <li>決勝戦以外の麻雀については、人数、ルール、点数計算、開催形式などは自由とする。</li>
+        <li>メダルの授受については、以下の共通ルールを適用する。</li>
+        <li>その日の対局参加者のうち、最も順位が高かった者が、最も順位が低かった者からメダル1枚を受け取る。</li>
+        <li>4人打ちの場合、2位・3位はメダルの増減なしとする。</li>
+        <li>3人打ちの場合、2位はメダルの増減なしとする。</li>
+        <li>メダルの移動は1日につき合計1枚とする。</li>
+        <li>12月の対局は、決勝戦・自由対局を問わずメダルの増減を行わない。</li>
+      </ol>
+
+      <h3>第6条　対局回数のカウントと決勝参加資格</h3>
+      <ol>
+        <li>1日麻雀を開催した場合、対局回数を1回とカウントする。</li>
+        <li>同じ日に複数回対局しても、対局回数は1回とする。</li>
+        <li>仲間内のメンバーが2名以上参加している麻雀を対象対局とする。</li>
+        <li>決勝戦への参加資格は、1月から11月までに対象対局に12回以上参加していることとする。</li>
+      </ol>
+
+      <h3>第7条　年間ランキング</h3>
+      <ol>
+        <li>年間ランキングは、11月30日時点のメダル保有枚数によって決定する。</li>
+        <li>メダル保有枚数が同じ場合は、年間の対象対局参加回数が多い者を上位とする。</li>
+        <li>第6条の決勝参加資格を満たした者のうち、年間ランキング上位3名が決勝戦に進出する。</li>
+        <li>年間ランキングは11月30日をもって確定し、12月の対局結果による順位変更は行わない。</li>
+      </ol>
+
+      <h3>第8条　決勝戦</h3>
+      <ol>
+        <li>決勝戦は毎年12月に開催する。</li>
+        <li>決勝戦は年間ランキング上位3名で行う。</li>
+        <li>3名による3人打ち麻雀を行い、その結果によって年間最終順位を決定する。</li>
+        <li>決勝戦の1位を年間チャンピオン、2位を準優勝、3位を第3位とする。</li>
+        <li>決勝戦ではメダルの増減は行わない。</li>
+      </ol>
+
+      <h3>第9条　決勝戦当日の自由対局</h3>
+      <ol>
+        <li>決勝進出者以外のメンバーも、都合が合えば参加できる。</li>
+        <li>決勝戦と並行して、自由に麻雀を楽しむことができる。</li>
+        <li>自由対局ではメダルの増減を行わない。</li>
+        <li>自由対局への参加は任意とする。</li>
+      </ol>
+
+      <h3>第10条　運営・記録</h3>
+      <ol>
+        <li>対局結果およびメダルの増減は、LINEグループ等で共有・記録する。</li>
+        <li>年間ランキングは11月30日時点のメダル保有枚数に基づいて管理する。</li>
+        <li>規約に定めのない事項や解釈に疑義が生じた場合は、参加者間で協議して決定する。</li>
+      </ol>
+
+      <h3>第11条　倫理規定・参加者の心得</h3>
+      <p>本大会は、仲間内で麻雀を健全に楽しむことを目的とし、参加者全員が以下の規定を遵守するものとする。</p>
+      <ol>
+        <li><b>不正行為の禁止</b>イカサマ、インチキ、その他大会の公平性を損なう不正行為を一切禁止する。不正行為を行った者は、その年の年間ランキングの対象外とし、悪質な場合は大会から除名する。</li>
+        <li><b>秘密保持</b>メンバー外の者に対して、対局における勝ち負け、個人の成績、金銭の授受等について口外しないこと。ただし、参加者を募る目的で、本会の存在や活動について紹介することは認める。</li>
+        <li><b>金銭等の授受に関する節度</b>社会通念から過度に逸脱した金銭その他の授受は厳に慎むこと。法令を遵守し、常識と節度を持って娯楽の範囲を逸脱しないこと。</li>
+        <li><b>健全な娯楽としての参加</b>麻雀はあくまで娯楽として楽しむものとし、仕事、家庭、日常生活に支障をきたさない範囲で参加すること。</li>
+        <li><b>相互尊重</b>参加者同士が互いを尊重し、節度ある言動を心掛けること。勝敗にかかわらず、楽しく気持ちよく麻雀ができる環境を維持すること。</li>
+        <li><b>規定違反への対応</b>倫理規定に違反した場合は、参加者間で事実関係を確認し、違反の程度に応じて警告、年間ランキング対象外、除名等の措置を講じることができる。</li>
+      </ol>
+
+      <h3>第12条　幹事・運営体制</h3>
+      <ol>
+        <li>本大会の会長は臼井さんとする。</li>
+        <li>会長は大会全体の運営を統括する。</li>
+        <li>11月30日時点の年間メダルランキング下位2名が、翌12月の決勝戦に向けた幹事役を担当する。</li>
+        <li>幹事役は、決勝戦の開催日程および開催場所を調整する。</li>
+        <li>幹事役は、決定した日程・場所等をLINEグループ内で参加者に案内する。</li>
+        <li>幹事役の担当範囲は、日程・場所の調整およびLINEグループへの案内までとする。</li>
+        <li>幹事役は、決勝進出者を含む全参加者の年間ランキングを対象として選出する。</li>
+      </ol>
+
+      <h3>第13条　連絡方法</h3>
+      <ol>
+        <li>大会に関する連絡、対局結果の報告、メダルランキングの共有、決勝戦の案内等は、原則として大会専用のLINEグループを通じて行う。</li>
+        <li>参加者はLINEグループでの連絡事項を確認し、円滑な大会運営に協力するものとする。</li>
+      </ol>
+
+      <h3>第14条　年間チャンピオン</h3>
+      <p>決勝戦の最終順位1位の者を、その年の年間麻雀チャンピオンとする。</p>
+
+      <div class="end">以上</div>
+    </div>
+    <button class="btn sub" onclick="goBack()">戻る</button>
+  </section>
 </main>
 
 <nav>
@@ -150,6 +287,7 @@
   <button data-tab="history"><b>📋</b>履歴</button>
   <button data-tab="stats"><b>🏆</b>成績</button>
   <button data-tab="members"><b>👥</b>会員</button>
+  <button data-tab="rules"><b>📜</b>規約</button>
 </nav>
 
 <div class="loading" id="loading">読み込み中…</div>
@@ -282,7 +420,7 @@ function pick(kind, id){ S[kind] = S[kind] === id ? null : id; drawPickers(); }
 $('fPlace').addEventListener('input', drawPickers);
 function dateHint(){
   const d = $('fDate').value;
-  $('fDateHint').textContent = d && !inCoinPeriod(d, d.slice(0, 4)) ? `※${COIN_TO_MONTH + 1}月の開催は記録されますが、コイン総合順位の集計対象外です` : '';
+  $('fDateHint').textContent = d && !inCoinPeriod(d, d.slice(0, 4)) ? `※${COIN_TO_MONTH + 1}月の開催は記録されますが、メダル年間ランキングの集計対象外です` : '';
 }
 
 async function submitGame(){
@@ -293,7 +431,7 @@ async function submitGame(){
     S.lastGame = g;
     $('form').style.display = 'none'; $('done').style.display = 'block';
     $('shareBtn').style.display = liff.isApiAvailable('shareTargetPicker') ? 'block' : 'none';
-    await reload();                                   // 登録後のコイン数で表示する
+    await reload();                                   // 登録後のメダル数で表示する
     $('doneSummary').textContent = summaryText(g, false);
   } catch (e) { showErr(e.message); } finally { loading(false); }
 }
@@ -309,11 +447,11 @@ function summaryText(g, withLink){
   if (inCoinPeriod(g.date, y)) {
     const rows = coinTable(y), f = id => rows.find(r => r.id === id);
     const tr = f(g.top), lr = f(g.last);
-    if (tr) topC = `（🪙${tr.coins}枚・${tr.rank}位）`;
-    if (lr) lastC = `（🪙${lr.coins}枚・${lr.rank}位）`;
+    if (tr) topC = `（🏅${tr.coins}枚・${tr.rank}位）`;
+    if (lr) lastC = `（🏅${lr.coins}枚・${lr.rank}位）`;
   }
   let t = `${g.date.replace(/-/g, '/')}　＠${g.place}\n参加：${g.players.map(nameOf).join('・')}\n🥇トップ：${nameOf(g.top)} +1枚${topC}\n💧ラス：${nameOf(g.last)} −1枚${lastC}`;
-  if (!inCoinPeriod(g.date, y)) t += `\n※${COIN_TO_MONTH + 1}月の開催はコイン集計の対象外です`;
+  if (!inCoinPeriod(g.date, y)) t += `\n※${COIN_TO_MONTH + 1}月の開催はメダル集計の対象外です`;
   if (withLink) t = `🀄 三麻 対戦記録\n${t}\n\n成績はこちら👇\nhttps://liff.line.me/${LIFF_ID}`;
   return t;
 }
@@ -373,42 +511,60 @@ async function delGame(id){
   catch (e) { showErr(e.message); } finally { loading(false); }
 }
 
-/* ---------- コイン総合順位 ---------- */
-const COIN_START = 30;       // 初期コイン
+/* ---------- メダル年間ランキング ---------- */
+const COIN_START = 30;       // 初期メダル
 const COIN_FROM_MONTH = 1;   // 集計開始月
 const COIN_TO_MONTH = 11;    // 集計終了月（12月の開催は対象外）
+const FINAL_MIN_DAYS = 12;   // 決勝参加資格：対象対局の参加日数（第6条4項）
+const FINALISTS = 3;         // 決勝進出人数（第7条3項）
+const KANJI = 2;             // 幹事人数：下位からの人数（第12条3項）
 
 const inCoinPeriod = (date, year) => {
   const m = parseInt(date.slice(5, 7), 10);
   return date.startsWith(year + '-') && m >= COIN_FROM_MONTH && m <= COIN_TO_MONTH;
 };
 
-/** 指定年度のコイン集計。在籍中の会員は対局なしでも初期コインで表示 */
+/** 指定年度のメダル集計。在籍中の会員は対局なしでも初期メダルで表示 */
 function coinTable(year){
   const st = {};
-  const row = id => (st[id] = st[id] || { id, n: 0, top: 0, last: 0 });
+  const row = id => (st[id] = st[id] || { id, days: new Set(), top: 0, last: 0 });
   S.members.filter(m => m.active).forEach(m => row(m.id));
   S.games.filter(g => inCoinPeriod(g.date, year)).forEach(g => g.players.forEach(p => {
-    const r = row(p); r.n++;
+    const r = row(p); r.days.add(g.date);          // 参加は日数で数える（第6条1・2項）
     if (p === g.top) r.top++;
     if (p === g.last) r.last++;
   }));
-  const rows = Object.values(st).map(r => Object.assign(r, { coins: COIN_START + r.top - r.last }));
-  // コイン多い順 → 同数なら参加回数が多い順 → 会員ID順（表示順のみ。順位は同順位）
+  const rows = Object.values(st).map(r => ({
+    id: r.id, n: r.days.size, top: r.top, last: r.last,
+    coins: COIN_START + r.top - r.last,
+    eligible: r.days.size >= FINAL_MIN_DAYS,
+  }));
+  // メダル多い順 → 同数なら参加日数が多い順（第7条2項）→ 会員ID順（表示順のみ）
   rows.sort((a, b) => b.coins - a.coins || b.n - a.n || a.id.localeCompare(b.id));
-  rows.forEach((r, i) => { r.rank = i > 0 && rows[i - 1].coins === r.coins ? rows[i - 1].rank : i + 1; });
+  // メダルも参加日数も同じ場合のみ同順位
+  rows.forEach((r, i) => {
+    const p = rows[i - 1];
+    r.rank = p && p.coins === r.coins && p.n === r.n ? p.rank : i + 1;
+  });
+  // 決勝進出：資格を満たした人の中の上位3名（第7条3項）
+  rows.filter(r => r.eligible).slice(0, FINALISTS).forEach(r => { r.finalist = true; });
+  // 幹事：参加実績のある人の中の下位2名（第12条3・7項）
+  rows.filter(r => r.n > 0).slice(-KANJI).forEach(r => { r.kanji = true; });
   return rows;
 }
 
 function renderStats(){
   const y = $('sYear').value;
   $('sStart').textContent = COIN_START;
+  $('sMin').textContent = FINAL_MIN_DAYS; $('sFin').textContent = FINALISTS; $('sKanji').textContent = KANJI;
   $('sPeriod').textContent = `集計期間：${y}年${COIN_FROM_MONTH}月1日〜${COIN_TO_MONTH}月30日の開催`;
   const rows = coinTable(y);
   const medal = r => r.rank === 1 ? '🥇' : r.rank === 2 ? '🥈' : r.rank === 3 ? '🥉' : r.rank;
   const diff = r => { const d = r.coins - COIN_START; return d > 0 ? `<span style="color:var(--green)">+${d}</span>` : d < 0 ? `<span style="color:var(--red)">${d}</span>` : '±0'; };
   $('statsBody').innerHTML = rows.length ? rows.map(r =>
-    `<tr><td>${medal(r)}</td><td class="n" style="text-align:left">${esc(nameOf(r.id))}</td><td class="n">${r.coins}</td><td>${diff(r)}</td><td>${r.n}</td><td>${r.top}</td><td>${r.last}</td></tr>`).join('')
+    `<tr class="${r.finalist ? 'fin' : ''}"><td>${medal(r)}</td><td class="n" style="text-align:left">${esc(nameOf(r.id))}${
+      r.finalist ? '<span class="badge fin">決勝</span>' : r.eligible ? '<span class="badge ok">資格</span>' : ''}${
+      r.kanji ? '<span class="badge kanji">幹事</span>' : ''}</td><td class="n">${r.coins}</td><td>${diff(r)}</td><td>${r.n}</td><td>${r.top}</td><td>${r.last}</td></tr>`).join('')
     : '<tr><td colspan="7" class="empty">会員がいません</td></tr>';
 }
 
@@ -427,11 +583,16 @@ async function addOtherMember(){
 }
 
 /* ---------- タブ ---------- */
-document.querySelectorAll('nav button').forEach(b => b.addEventListener('click', () => {
-  document.querySelectorAll('nav button').forEach(x => x.classList.toggle('on', x === b));
-  document.querySelectorAll('section').forEach(s => s.classList.toggle('on', s.id === 'tab-' + b.dataset.tab));
-  showErr('');
-}));
+let curTab = 'input', prevTab = 'input';
+function showTab(tab){
+  if (tab !== curTab) { prevTab = curTab; curTab = tab; }
+  document.querySelectorAll('nav button').forEach(x => x.classList.toggle('on', x.dataset.tab === tab));
+  document.querySelectorAll('section').forEach(s => s.classList.toggle('on', s.id === 'tab-' + tab));
+  showErr(''); window.scrollTo(0, 0);
+}
+// 規約の「戻る」：規約を開く前のタブに戻る
+function goBack(){ showTab(prevTab === 'rules' ? 'input' : prevTab); }
+document.querySelectorAll('nav button').forEach(b => b.addEventListener('click', () => showTab(b.dataset.tab)));
 
 boot();
 </script>
