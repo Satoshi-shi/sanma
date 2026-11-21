@@ -86,7 +86,8 @@
 
     <div id="form" class="card" style="display:none">
       <label class="t">開催日</label>
-      <input type="date" id="fDate">
+      <input type="date" id="fDate" onchange="dateHint()">
+      <div class="hint" id="fDateHint"></div>
       <label class="t">開催場所</label>
       <input type="text" id="fPlace" list="placeList" placeholder="例：雀荘〇〇 新宿店" maxlength="40">
       <datalist id="placeList"></datalist>
@@ -119,20 +120,17 @@
 
   <!-- 成績 -->
   <section id="tab-stats">
-    <div class="card row2">
+    <div class="card">
       <select id="sYear" onchange="renderStats()"></select>
-      <select id="sSort" onchange="renderStats()">
-        <option value="topRate">トップ率順</option>
-        <option value="top">トップ回数順</option>
-        <option value="lastRate">ラス率が低い順</option>
-        <option value="n">参加回数順</option>
-      </select>
+      <div class="hint" id="sPeriod"></div>
     </div>
     <div class="card">
+      <div style="font-weight:700;margin-bottom:8px">🪙 コイン総合順位</div>
       <table>
-        <thead><tr><th>名前</th><th>参加</th><th>トップ</th><th>ラス</th><th>トップ率</th><th>ラス率</th></tr></thead>
+        <thead><tr><th>順位</th><th style="text-align:left">名前</th><th>コイン</th><th>増減</th><th>参加</th><th>トップ</th><th>ラス</th></tr></thead>
         <tbody id="statsBody"></tbody>
       </table>
+      <div class="hint">全員 <b id="sStart"></b> 枚からスタート。トップ +1枚／ラス −1枚。コインが同じ場合は同順位。</div>
     </div>
   </section>
 
@@ -243,6 +241,7 @@ function renderInput(){
     if (!$('selfName').value && S.profile) $('selfName').value = S.profile.displayName.slice(0, 20);
   }
   if (!$('fDate').value) $('fDate').value = today();
+  dateHint();
   if (S.meId && S.sel.length === 0) S.sel = [S.meId];   // 自分を初期選択
 
   const places = [...new Set(S.games.map(g => g.place))];
@@ -281,6 +280,10 @@ function togglePlayer(id){
 }
 function pick(kind, id){ S[kind] = S[kind] === id ? null : id; drawPickers(); }
 $('fPlace').addEventListener('input', drawPickers);
+function dateHint(){
+  const d = $('fDate').value;
+  $('fDateHint').textContent = d && !inCoinPeriod(d, d.slice(0, 4)) ? `※${COIN_TO_MONTH + 1}月の開催は記録されますが、コイン総合順位の集計対象外です` : '';
+}
 
 async function submitGame(){
   showErr(''); loading(true);
@@ -288,10 +291,10 @@ async function submitGame(){
   try {
     await apiPost('addGame', g);
     S.lastGame = g;
-    $('doneSummary').textContent = summaryText(g, false);
     $('form').style.display = 'none'; $('done').style.display = 'block';
     $('shareBtn').style.display = liff.isApiAvailable('shareTargetPicker') ? 'block' : 'none';
-    await reload();
+    await reload();                                   // 登録後のコイン数で表示する
+    $('doneSummary').textContent = summaryText(g, false);
   } catch (e) { showErr(e.message); } finally { loading(false); }
 }
 
@@ -301,7 +304,16 @@ function resetForm(){
 }
 
 function summaryText(g, withLink){
-  let t = `${g.date.replace(/-/g, '/')}　＠${g.place}\n参加：${g.players.map(nameOf).join('・')}\n🥇トップ：${nameOf(g.top)}\n💧ラス：${nameOf(g.last)}`;
+  const y = g.date.slice(0, 4);
+  let topC = '', lastC = '';
+  if (inCoinPeriod(g.date, y)) {
+    const rows = coinTable(y), f = id => rows.find(r => r.id === id);
+    const tr = f(g.top), lr = f(g.last);
+    if (tr) topC = `（🪙${tr.coins}枚・${tr.rank}位）`;
+    if (lr) lastC = `（🪙${lr.coins}枚・${lr.rank}位）`;
+  }
+  let t = `${g.date.replace(/-/g, '/')}　＠${g.place}\n参加：${g.players.map(nameOf).join('・')}\n🥇トップ：${nameOf(g.top)} +1枚${topC}\n💧ラス：${nameOf(g.last)} −1枚${lastC}`;
+  if (!inCoinPeriod(g.date, y)) t += `\n※${COIN_TO_MONTH + 1}月の開催はコイン集計の対象外です`;
   if (withLink) t = `🀄 三麻 対戦記録\n${t}\n\n成績はこちら👇\nhttps://liff.line.me/${LIFF_ID}`;
   return t;
 }
@@ -327,8 +339,12 @@ async function registerSelf(){
 /* ---------- 履歴・成績共通 ---------- */
 function fillFilters(){
   const years = [...new Set(S.games.map(g => g.date.slice(0, 4)))].sort().reverse();
-  const yOpts = '<option value="">全期間</option>' + years.map(y => `<option value="${y}">${y}年</option>`).join('');
-  ['hYear', 'sYear'].forEach(id => { const v = $(id).value; $(id).innerHTML = yOpts; $(id).value = v; });
+  const yOpts = years.map(y => `<option value="${y}">${y}年</option>`).join('');
+  { const v = $('hYear').value; $('hYear').innerHTML = '<option value="">全期間</option>' + yOpts; $('hYear').value = v; }
+  // 成績は年単位。今年（記録がなくても）を必ず選択肢に入れ、初期値にする
+  const thisYear = today().slice(0, 4);
+  const sYears = [...new Set([thisYear, ...years])].sort().reverse();
+  { const v = $('sYear').value || thisYear; $('sYear').innerHTML = sYears.map(y => `<option value="${y}">${y}年度</option>`).join(''); $('sYear').value = v; }
   const v = $('hMember').value;
   $('hMember').innerHTML = '<option value="">全員</option>' + S.members.map(m => `<option value="${m.id}">${esc(m.name)}</option>`).join('');
   $('hMember').value = v;
@@ -357,25 +373,43 @@ async function delGame(id){
   catch (e) { showErr(e.message); } finally { loading(false); }
 }
 
-function renderStats(){
-  const y = $('sYear').value, sort = $('sSort').value;
+/* ---------- コイン総合順位 ---------- */
+const COIN_START = 30;       // 初期コイン
+const COIN_FROM_MONTH = 1;   // 集計開始月
+const COIN_TO_MONTH = 11;    // 集計終了月（12月の開催は対象外）
+
+const inCoinPeriod = (date, year) => {
+  const m = parseInt(date.slice(5, 7), 10);
+  return date.startsWith(year + '-') && m >= COIN_FROM_MONTH && m <= COIN_TO_MONTH;
+};
+
+/** 指定年度のコイン集計。在籍中の会員は対局なしでも初期コインで表示 */
+function coinTable(year){
   const st = {};
-  S.games.filter(g => !y || g.date.startsWith(y)).forEach(g => g.players.forEach(p => {
-    st[p] = st[p] || { id: p, n: 0, top: 0, last: 0 };
-    st[p].n++; if (p === g.top) st[p].top++; if (p === g.last) st[p].last++;
+  const row = id => (st[id] = st[id] || { id, n: 0, top: 0, last: 0 });
+  S.members.filter(m => m.active).forEach(m => row(m.id));
+  S.games.filter(g => inCoinPeriod(g.date, year)).forEach(g => g.players.forEach(p => {
+    const r = row(p); r.n++;
+    if (p === g.top) r.top++;
+    if (p === g.last) r.last++;
   }));
-  const rows = Object.values(st).map(r => Object.assign(r, { topRate: r.top / r.n, lastRate: r.last / r.n }));
-  const cmp = {
-    topRate: (a, b) => b.topRate - a.topRate || b.n - a.n,
-    top: (a, b) => b.top - a.top || b.topRate - a.topRate,
-    lastRate: (a, b) => a.lastRate - b.lastRate || b.n - a.n,
-    n: (a, b) => b.n - a.n,
-  }[sort];
-  rows.sort(cmp);
-  const pct = v => (v * 100).toFixed(1) + '%';
+  const rows = Object.values(st).map(r => Object.assign(r, { coins: COIN_START + r.top - r.last }));
+  // コイン多い順 → 同数なら参加回数が多い順 → 会員ID順（表示順のみ。順位は同順位）
+  rows.sort((a, b) => b.coins - a.coins || b.n - a.n || a.id.localeCompare(b.id));
+  rows.forEach((r, i) => { r.rank = i > 0 && rows[i - 1].coins === r.coins ? rows[i - 1].rank : i + 1; });
+  return rows;
+}
+
+function renderStats(){
+  const y = $('sYear').value;
+  $('sStart').textContent = COIN_START;
+  $('sPeriod').textContent = `集計期間：${y}年${COIN_FROM_MONTH}月1日〜${COIN_TO_MONTH}月30日の開催`;
+  const rows = coinTable(y);
+  const medal = r => r.rank === 1 ? '🥇' : r.rank === 2 ? '🥈' : r.rank === 3 ? '🥉' : r.rank;
+  const diff = r => { const d = r.coins - COIN_START; return d > 0 ? `<span style="color:var(--green)">+${d}</span>` : d < 0 ? `<span style="color:var(--red)">${d}</span>` : '±0'; };
   $('statsBody').innerHTML = rows.length ? rows.map(r =>
-    `<tr><td class="n">${esc(nameOf(r.id))}</td><td>${r.n}</td><td>${r.top}</td><td>${r.last}</td><td>${pct(r.topRate)}</td><td>${pct(r.lastRate)}</td></tr>`).join('')
-    : '<tr><td colspan="6" class="empty">記録がありません</td></tr>';
+    `<tr><td>${medal(r)}</td><td class="n" style="text-align:left">${esc(nameOf(r.id))}</td><td class="n">${r.coins}</td><td>${diff(r)}</td><td>${r.n}</td><td>${r.top}</td><td>${r.last}</td></tr>`).join('')
+    : '<tr><td colspan="7" class="empty">会員がいません</td></tr>';
 }
 
 /* ---------- 会員 ---------- */
