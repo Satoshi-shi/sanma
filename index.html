@@ -80,6 +80,7 @@
 
 <main>
   <div class="err" id="err"></div>
+  <div class="err" id="info" style="background:var(--gold-soft);color:var(--gold)"></div>
 
   <!-- 記録する -->
   <section id="tab-input" class="on">
@@ -111,11 +112,12 @@
       <label class="t">💧 ラス</label>
       <div class="chips" id="lastChips"><span class="hint">参加者を選ぶと表示されます</span></div>
       <button class="btn" id="submitBtn" onclick="submitGame()" disabled>登録する</button>
+      <button class="btn sub" id="cancelEditBtn" onclick="cancelEdit()" style="display:none">修正をやめる</button>
     </div>
 
     <div id="done" class="card done" style="display:none">
       <div class="big">✅</div>
-      <p><b>登録しました</b></p>
+      <p><b id="doneTitle">登録しました</b></p>
       <p id="doneSummary" style="font-size:14px;color:var(--sub);white-space:pre-line"></p>
       <button class="btn" id="shareBtn" onclick="shareLast()">グループLINEに共有</button>
       <button class="btn sub" onclick="resetForm()">続けて入力する</button>
@@ -300,7 +302,7 @@ const SUPABASE_KEY = 'sb_publishable_-Dv7CqKdifp3LgblJpOhXg_4Nvhverg';   // Publ
 /* ================================== */
 const API_URL = SUPABASE_URL + '/functions/v1/api';
 
-const S = { members: [], games: [], meId: null, loggedIn: false, profile: null, sel: [], top: null, last: null, lastGame: null };
+const S = { members: [], games: [], meId: null, loggedIn: false, profile: null, sel: [], top: null, last: null, lastGame: null, isAdmin: false, editId: null };
 const $ = id => document.getElementById(id);
 const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const nameOf = id => (S.members.find(m => m.id === id) || {}).name || id;
@@ -348,7 +350,7 @@ async function boot(){
       apiGet(),
       S.loggedIn ? apiPost('whoami').catch(() => ({ memberId: null })) : Promise.resolve({ memberId: null }),
     ]);
-    S.members = boot.members; S.games = boot.games; S.meId = who.memberId;
+    S.members = boot.members; S.games = boot.games; S.meId = who.memberId; S.isAdmin = !!who.isAdmin;
     renderAll();
   } catch (e) {
     showErr('読み込みに失敗しました：' + e.message);
@@ -360,7 +362,7 @@ async function reload(){
 }
 
 function renderAll(){
-  $('meLabel').textContent = S.meId ? `${nameOf(S.meId)}（${S.meId}）でログイン中` : (S.loggedIn ? '会員未登録' : '閲覧モード（未ログイン）');
+  $('meLabel').textContent = S.meId ? `${nameOf(S.meId)}（${S.meId}）でログイン中${S.isAdmin ? '・管理者' : ''}` : (S.loggedIn ? '会員未登録' : '閲覧モード（未ログイン）');
   renderInput(); fillFilters(); renderHistory(); renderStats(); renderMembers();
 }
 
@@ -380,7 +382,10 @@ function renderInput(){
   }
   if (!$('fDate').value) $('fDate').value = today();
   dateHint();
-  if (S.meId && S.sel.length === 0) S.sel = [S.meId];   // 自分を初期選択
+  if (S.meId && S.sel.length === 0 && !S.editId) S.sel = [S.meId];   // 自分を初期選択
+  // 修正モードの表示切替
+  $('submitBtn').textContent = S.editId ? '修正を保存する' : '登録する';
+  $('cancelEditBtn').style.display = S.editId ? 'block' : 'none';
 
   const places = [...new Set(S.games.map(g => g.place))];
   $('placeList').innerHTML = places.map(p => `<option value="${esc(p)}">`).join('');
@@ -427,8 +432,13 @@ async function submitGame(){
   showErr(''); loading(true);
   const g = { date: $('fDate').value, place: $('fPlace').value.trim(), players: S.sel, top: S.top, last: S.last };
   try {
-    await apiPost('addGame', g);
+    const editing = !!S.editId;
+    if (editing) await apiPost('updateGame', Object.assign({ gameId: S.editId }, g));
+    else await apiPost('addGame', g);
+    S.editId = null;
     S.lastGame = g;
+    $('doneTitle').textContent = editing ? '修正しました' : '登録しました';
+    showInfo('');
     $('form').style.display = 'none'; $('done').style.display = 'block';
     $('shareBtn').style.display = liff.isApiAvailable('shareTargetPicker') ? 'block' : 'none';
     await reload();                                   // 登録後のメダル数で表示する
@@ -437,9 +447,22 @@ async function submitGame(){
 }
 
 function resetForm(){
-  S.sel = S.meId ? [S.meId] : []; S.top = null; S.last = null;
+  S.sel = S.meId ? [S.meId] : []; S.top = null; S.last = null; S.editId = null;
+  $('fDate').value = today(); $('fPlace').value = '';
   $('done').style.display = 'none'; renderInput();
 }
+
+/* ---------- 修正（管理者のみ） ---------- */
+function editGame(id){
+  const g = S.games.find(x => x.id === id); if (!g) return;
+  S.editId = id; S.sel = [...g.players]; S.top = g.top; S.last = g.last;
+  $('fDate').value = g.date; $('fPlace').value = g.place;
+  $('done').style.display = 'none';
+  showTab('input'); renderInput();
+  showInfo(`${g.date.replace(/-/g, '/')} ＠${g.place} の記録を修正中です`);
+}
+function cancelEdit(){ resetForm(); showInfo(''); showTab('history'); }
+function showInfo(msg){ const e = $('info'); e.textContent = msg; e.style.display = msg ? 'block' : 'none'; }
 
 function summaryText(g, withLink){
   const y = g.date.slice(0, 4);
@@ -495,7 +518,7 @@ function renderHistory(){
     <div class="card game">
       <div class="head">
         <span class="date">${esc(g.date.replace(/-/g, '/'))}</span>
-        ${g.createdBy === S.meId ? `<button class="del" onclick="delGame('${g.id}')">削除</button>` : ''}
+        ${S.isAdmin ? `<span><button class="del" onclick="editGame('${g.id}')">修正</button> <button class="del" onclick="delGame('${g.id}')">削除</button></span>` : ''}
       </div>
       <div class="place">📍 ${esc(g.place)}　${g.players.length}名</div>
       <div class="ps">
@@ -589,6 +612,8 @@ function showTab(tab){
   document.querySelectorAll('nav button').forEach(x => x.classList.toggle('on', x.dataset.tab === tab));
   document.querySelectorAll('section').forEach(s => s.classList.toggle('on', s.id === 'tab-' + tab));
   showErr(''); window.scrollTo(0, 0);
+  if (tab !== 'input' && S.editId) { resetForm(); }   // 修正中に別タブへ移ったら修正を取り消す
+  if (tab !== 'input') showInfo('');
 }
 // 規約の「戻る」：規約を開く前のタブに戻る
 function goBack(){ showTab(prevTab === 'rules' ? 'input' : prevTab); }
