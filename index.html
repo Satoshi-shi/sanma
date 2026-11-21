@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>三麻 対戦記録</title>
+<script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+<style>
+  :root{
+    --bg:#f4f1ea; --card:#fff; --ink:#1f2a24; --sub:#6b746e; --line:#e3ded3;
+    --green:#1d6b4f; --green-soft:#e3f0ea; --red:#b23a3a; --red-soft:#f7e4e2; --gold:#b8860b; --gold-soft:#faf0d4;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Noto Sans JP",sans-serif;background:var(--bg);color:var(--ink);font-size:15px;padding-bottom:84px}
+  header{background:var(--green);color:#fff;padding:14px 16px 12px;position:sticky;top:0;z-index:5}
+  header h1{margin:0;font-size:17px;letter-spacing:.05em}
+  header .me{font-size:12px;opacity:.85;margin-top:2px}
+  nav{position:fixed;bottom:0;left:0;right:0;display:flex;background:#fff;border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom);z-index:5}
+  nav button{flex:1;border:0;background:none;padding:10px 0 12px;font-size:12px;color:var(--sub)}
+  nav button b{display:block;font-size:19px;margin-bottom:2px}
+  nav button.on{color:var(--green);font-weight:700}
+  main{padding:14px}
+  section{display:none} section.on{display:block}
+  .card{background:var(--card);border-radius:12px;padding:14px;margin-bottom:12px;box-shadow:0 1px 2px rgba(0,0,0,.05)}
+  label.t{display:block;font-size:12px;color:var(--sub);margin:12px 0 6px;font-weight:600}
+  label.t:first-child{margin-top:0}
+  input[type=date],input[type=text],select{width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:9px;font-size:16px;background:#fff;color:var(--ink)}
+  .chips{display:flex;flex-wrap:wrap;gap:8px}
+  .chip{border:1px solid var(--line);background:#fff;border-radius:999px;padding:8px 14px;font-size:14px;color:var(--ink)}
+  .chip.sel{background:var(--green);border-color:var(--green);color:#fff}
+  .chip.top.sel{background:var(--gold);border-color:var(--gold)}
+  .chip.last.sel{background:var(--red);border-color:var(--red)}
+  .chip:disabled{opacity:.35}
+  .btn{display:block;width:100%;border:0;border-radius:10px;padding:14px;font-size:16px;font-weight:700;background:var(--green);color:#fff;margin-top:16px}
+  .btn.sub{background:#fff;color:var(--green);border:1px solid var(--green)}
+  .btn:disabled{opacity:.4}
+  .hint{font-size:12px;color:var(--sub);margin-top:6px}
+  .err{background:var(--red-soft);color:var(--red);padding:10px 12px;border-radius:9px;font-size:13px;margin-bottom:12px;display:none}
+  .game .head{display:flex;justify-content:space-between;align-items:baseline}
+  .game .date{font-weight:700}
+  .game .place{font-size:12px;color:var(--sub)}
+  .game .ps{margin-top:8px;display:flex;flex-wrap:wrap;gap:6px}
+  .tag{font-size:13px;padding:4px 10px;border-radius:999px;background:#f1efe9}
+  .tag.top{background:var(--gold-soft);color:var(--gold);font-weight:700}
+  .tag.last{background:var(--red-soft);color:var(--red);font-weight:700}
+  .del{border:0;background:none;color:var(--sub);font-size:12px;text-decoration:underline}
+  table{width:100%;border-collapse:collapse;font-size:14px}
+  th{font-size:11px;color:var(--sub);font-weight:600;text-align:right;padding:6px 4px;border-bottom:1px solid var(--line)}
+  td{text-align:right;padding:9px 4px;border-bottom:1px solid #f0ece4}
+  th:first-child,td:first-child{text-align:left}
+  td.n{font-weight:600}
+  .row2{display:flex;gap:8px} .row2>*{flex:1}
+  .mem{display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid #f0ece4}
+  .mem:last-child{border:0}
+  .mem .id{font-size:12px;color:var(--sub);font-family:ui-monospace,monospace}
+  .empty{text-align:center;color:var(--sub);padding:24px 0;font-size:14px}
+  .done{text-align:center}
+  .done .big{font-size:40px}
+  .loading{position:fixed;inset:0;background:rgba(244,241,234,.8);display:flex;align-items:center;justify-content:center;z-index:9;font-size:14px;color:var(--sub)}
+</style>
+</head>
+<body>
+<header>
+  <h1>🀄 三麻 対戦記録</h1>
+  <div class="me" id="meLabel">読み込み中…</div>
+</header>
+
+<main>
+  <div class="err" id="err"></div>
+
+  <!-- 記録する -->
+  <section id="tab-input" class="on">
+    <div id="needLogin" class="card" style="display:none">
+      <p style="margin:0 0 4px">記録の入力にはLINEログインが必要です。</p>
+      <button class="btn" onclick="liff.login({redirectUri: location.href})">LINEでログイン</button>
+    </div>
+
+    <div id="onboard" class="card" style="display:none">
+      <label class="t">はじめに：あなたはどの会員ですか？</label>
+      <div class="chips" id="unlinkedChips"></div>
+      <div class="hint">一覧にいない場合は新規登録してください。</div>
+      <label class="t">新規登録する名前</label>
+      <input type="text" id="selfName" maxlength="20">
+      <button class="btn" onclick="registerSelf()">この名前で会員登録</button>
+    </div>
+
+    <div id="form" class="card" style="display:none">
+      <label class="t">開催日</label>
+      <input type="date" id="fDate">
+      <label class="t">開催場所</label>
+      <input type="text" id="fPlace" list="placeList" placeholder="例：雀荘〇〇 新宿店" maxlength="40">
+      <datalist id="placeList"></datalist>
+      <label class="t">参加者（3〜4名）<span id="pCount"></span></label>
+      <div class="chips" id="playerChips"></div>
+      <label class="t">🥇 トップ</label>
+      <div class="chips" id="topChips"><span class="hint">参加者を選ぶと表示されます</span></div>
+      <label class="t">💧 ラス</label>
+      <div class="chips" id="lastChips"><span class="hint">参加者を選ぶと表示されます</span></div>
+      <button class="btn" id="submitBtn" onclick="submitGame()" disabled>登録する</button>
+    </div>
+
+    <div id="done" class="card done" style="display:none">
+      <div class="big">✅</div>
+      <p><b>登録しました</b></p>
+      <p id="doneSummary" style="font-size:14px;color:var(--sub);white-space:pre-line"></p>
+      <button class="btn" id="shareBtn" onclick="shareLast()">グループLINEに共有</button>
+      <button class="btn sub" onclick="resetForm()">続けて入力する</button>
+    </div>
+  </section>
+
+  <!-- 履歴 -->
+  <section id="tab-history">
+    <div class="card row2">
+      <select id="hYear" onchange="renderHistory()"></select>
+      <select id="hMember" onchange="renderHistory()"></select>
+    </div>
+    <div id="historyList"></div>
+  </section>
+
+  <!-- 成績 -->
+  <section id="tab-stats">
+    <div class="card row2">
+      <select id="sYear" onchange="renderStats()"></select>
+      <select id="sSort" onchange="renderStats()">
+        <option value="topRate">トップ率順</option>
+        <option value="top">トップ回数順</option>
+        <option value="lastRate">ラス率が低い順</option>
+        <option value="n">参加回数順</option>
+      </select>
+    </div>
+    <div class="card">
+      <table>
+        <thead><tr><th>名前</th><th>参加</th><th>トップ</th><th>ラス</th><th>トップ率</th><th>ラス率</th></tr></thead>
+        <tbody id="statsBody"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- 会員 -->
+  <section id="tab-members">
+    <div class="card" id="memberList"></div>
+    <div class="card" id="addMemberCard" style="display:none">
+      <label class="t">会員を追加（LINEを使わない人など）</label>
+      <input type="text" id="newMemberName" maxlength="20" placeholder="名前">
+      <button class="btn sub" onclick="addOtherMember()">追加</button>
+    </div>
+  </section>
+</main>
+
+<nav>
+  <button class="on" data-tab="input"><b>✏️</b>記録する</button>
+  <button data-tab="history"><b>📋</b>履歴</button>
+  <button data-tab="stats"><b>🏆</b>成績</button>
+  <button data-tab="members"><b>👥</b>会員</button>
+</nav>
+
+<div class="loading" id="loading">読み込み中…</div>
+
+<script>
+/* ===== 設定（ここを書き換える） ===== */
+const LIFF_ID = 'YOUR_LIFF_ID';
+const SUPABASE_URL = 'https://rafeukjpmuiwvvxoypks.supabase.co/rest/v1';
+const SUPABASE_KEY = 'sb_publishable_-Dv7CqKdifp3LgblJpOhXg_4Nvhverg';   // Publishable key（旧 anon key でも可）
+/* ================================== */
+const API_URL = SUPABASE_URL + '/functions/v1/api';
+
+const S = { members: [], games: [], meId: null, loggedIn: false, profile: null, sel: [], top: null, last: null, lastGame: null };
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const nameOf = id => (S.members.find(m => m.id === id) || {}).name || id;
+const today = () => { const d = new Date(); d.setMinutes(d.getMinutes() - d.getTimezoneOffset()); return d.toISOString().slice(0, 10); };
+
+function showErr(msg){ const e = $('err'); e.textContent = msg; e.style.display = msg ? 'block' : 'none'; if (msg) window.scrollTo(0, 0); }
+function loading(on){ $('loading').style.display = on ? 'flex' : 'none'; }
+
+// 閲覧：Supabase REST API から直接読む（RLSで公開範囲を制限済み）
+async function rest(path){
+  const r = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, { headers: { apikey: SUPABASE_KEY } });
+  if (!r.ok) throw new Error(`データ取得エラー (${r.status})`);
+  return r.json();
+}
+async function apiGet(){
+  const [members, games] = await Promise.all([
+    rest('members_public?select=id,name,active,linked&order=id'),
+    rest('games?select=id,date,place,players,top,last,created_by,created_at&order=date.desc,created_at.desc'),
+  ]);
+  return {
+    members,
+    games: games.map(g => ({ id: g.id, date: g.date, place: g.place, players: g.players, top: g.top, last: g.last, createdBy: g.created_by, createdAt: g.created_at })),
+  };
+}
+// 書き込み：Edge Function 経由（LINEのIDトークンをサーバー側で検証）
+async function apiPost(action, data){
+  const r = await fetch(API_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', apikey: SUPABASE_KEY },
+    body: JSON.stringify(Object.assign({ action, idToken: liff.getIDToken() }, data || {})),
+  });
+  const j = await r.json().catch(() => ({ ok: false, error: `通信エラー (${r.status})` }));
+  if (!j.ok) throw new Error(j.error); return j;
+}
+
+/* ---------- 起動 ---------- */
+async function boot(){
+  try {
+    await liff.init({ liffId: LIFF_ID });
+    S.loggedIn = liff.isLoggedIn();
+    if (!S.loggedIn && liff.isInClient()) { liff.login(); return; }
+    if (S.loggedIn) S.profile = await liff.getProfile().catch(() => null);
+
+    const [boot, who] = await Promise.all([
+      apiGet(),
+      S.loggedIn ? apiPost('whoami').catch(() => ({ memberId: null })) : Promise.resolve({ memberId: null }),
+    ]);
+    S.members = boot.members; S.games = boot.games; S.meId = who.memberId;
+    renderAll();
+  } catch (e) {
+    showErr('読み込みに失敗しました：' + e.message);
+  } finally { loading(false); }
+}
+
+async function reload(){
+  const j = await apiGet(); S.members = j.members; S.games = j.games; renderAll();
+}
+
+function renderAll(){
+  $('meLabel').textContent = S.meId ? `${nameOf(S.meId)}（${S.meId}）でログイン中` : (S.loggedIn ? '会員未登録' : '閲覧モード（未ログイン）');
+  renderInput(); fillFilters(); renderHistory(); renderStats(); renderMembers();
+}
+
+/* ---------- 記録する ---------- */
+function renderInput(){
+  $('needLogin').style.display = !S.loggedIn ? 'block' : 'none';
+  $('onboard').style.display = S.loggedIn && !S.meId ? 'block' : 'none';
+  const showForm = S.loggedIn && S.meId && $('done').style.display !== 'block';
+  $('form').style.display = showForm ? 'block' : 'none';
+
+  if (S.loggedIn && !S.meId) {
+    const un = S.members.filter(m => !m.linked && m.active);
+    $('unlinkedChips').innerHTML = un.length
+      ? un.map(m => `<button class="chip" onclick="linkSelf('${m.id}')">${esc(m.name)}</button>`).join('')
+      : '<span class="hint">未紐付けの会員はいません</span>';
+    if (!$('selfName').value && S.profile) $('selfName').value = S.profile.displayName.slice(0, 20);
+  }
+  if (!$('fDate').value) $('fDate').value = today();
+  if (S.meId && S.sel.length === 0) S.sel = [S.meId];   // 自分を初期選択
+
+  const places = [...new Set(S.games.map(g => g.place))];
+  $('placeList').innerHTML = places.map(p => `<option value="${esc(p)}">`).join('');
+  drawPickers();
+}
+
+function drawPickers(){
+  const act = S.members.filter(m => m.active);
+  $('playerChips').innerHTML = act.map(m => {
+    const on = S.sel.includes(m.id);
+    const dis = !on && S.sel.length >= 4;
+    return `<button class="chip ${on ? 'sel' : ''}" ${dis ? 'disabled' : ''} onclick="togglePlayer('${m.id}')">${esc(m.name)}</button>`;
+  }).join('');
+  $('pCount').textContent = ` … ${S.sel.length}名選択`;
+
+  if (S.sel.length >= 3) {
+    $('topChips').innerHTML = S.sel.map(id =>
+      `<button class="chip top ${S.top === id ? 'sel' : ''}" ${S.last === id ? 'disabled' : ''} onclick="pick('top','${id}')">${esc(nameOf(id))}</button>`).join('');
+    $('lastChips').innerHTML = S.sel.map(id =>
+      `<button class="chip last ${S.last === id ? 'sel' : ''}" ${S.top === id ? 'disabled' : ''} onclick="pick('last','${id}')">${esc(nameOf(id))}</button>`).join('');
+  } else {
+    const h = '<span class="hint">参加者を3名以上選ぶと表示されます</span>';
+    $('topChips').innerHTML = h; $('lastChips').innerHTML = h;
+  }
+  $('submitBtn').disabled = !(S.sel.length >= 3 && S.top && S.last && $('fPlace').value.trim());
+}
+
+function togglePlayer(id){
+  if (S.sel.includes(id)) {
+    S.sel = S.sel.filter(x => x !== id);
+    if (S.top === id) S.top = null;
+    if (S.last === id) S.last = null;
+  } else if (S.sel.length < 4) S.sel.push(id);
+  drawPickers();
+}
+function pick(kind, id){ S[kind] = S[kind] === id ? null : id; drawPickers(); }
+$('fPlace').addEventListener('input', drawPickers);
+
+async function submitGame(){
+  showErr(''); loading(true);
+  const g = { date: $('fDate').value, place: $('fPlace').value.trim(), players: S.sel, top: S.top, last: S.last };
+  try {
+    await apiPost('addGame', g);
+    S.lastGame = g;
+    $('doneSummary').textContent = summaryText(g, false);
+    $('form').style.display = 'none'; $('done').style.display = 'block';
+    $('shareBtn').style.display = liff.isApiAvailable('shareTargetPicker') ? 'block' : 'none';
+    await reload();
+  } catch (e) { showErr(e.message); } finally { loading(false); }
+}
+
+function resetForm(){
+  S.sel = S.meId ? [S.meId] : []; S.top = null; S.last = null;
+  $('done').style.display = 'none'; renderInput();
+}
+
+function summaryText(g, withLink){
+  let t = `${g.date.replace(/-/g, '/')}　＠${g.place}\n参加：${g.players.map(nameOf).join('・')}\n🥇トップ：${nameOf(g.top)}\n💧ラス：${nameOf(g.last)}`;
+  if (withLink) t = `🀄 三麻 対戦記録\n${t}\n\n成績はこちら👇\nhttps://liff.line.me/${LIFF_ID}`;
+  return t;
+}
+
+async function shareLast(){
+  if (!S.lastGame) return;
+  try { await liff.shareTargetPicker([{ type: 'text', text: summaryText(S.lastGame, true) }]); }
+  catch (e) { showErr('共有に失敗しました：' + e.message); }
+}
+
+async function linkSelf(memberId){
+  if (!confirm(`「${nameOf(memberId)}」として登録しますか？`)) return;
+  loading(true); showErr('');
+  try { const j = await apiPost('linkMember', { memberId }); S.meId = j.memberId; S.sel = []; await reload(); }
+  catch (e) { showErr(e.message); } finally { loading(false); }
+}
+async function registerSelf(){
+  loading(true); showErr('');
+  try { const j = await apiPost('addMember', { name: $('selfName').value, self: true }); S.meId = j.member.id; S.sel = []; await reload(); }
+  catch (e) { showErr(e.message); } finally { loading(false); }
+}
+
+/* ---------- 履歴・成績共通 ---------- */
+function fillFilters(){
+  const years = [...new Set(S.games.map(g => g.date.slice(0, 4)))].sort().reverse();
+  const yOpts = '<option value="">全期間</option>' + years.map(y => `<option value="${y}">${y}年</option>`).join('');
+  ['hYear', 'sYear'].forEach(id => { const v = $(id).value; $(id).innerHTML = yOpts; $(id).value = v; });
+  const v = $('hMember').value;
+  $('hMember').innerHTML = '<option value="">全員</option>' + S.members.map(m => `<option value="${m.id}">${esc(m.name)}</option>`).join('');
+  $('hMember').value = v;
+}
+
+function renderHistory(){
+  const y = $('hYear').value, mem = $('hMember').value;
+  const list = S.games.filter(g => (!y || g.date.startsWith(y)) && (!mem || g.players.includes(mem)));
+  $('historyList').innerHTML = list.length ? list.map(g => `
+    <div class="card game">
+      <div class="head">
+        <span class="date">${esc(g.date.replace(/-/g, '/'))}</span>
+        ${g.createdBy === S.meId ? `<button class="del" onclick="delGame('${g.id}')">削除</button>` : ''}
+      </div>
+      <div class="place">📍 ${esc(g.place)}　${g.players.length}名</div>
+      <div class="ps">
+        ${g.players.map(p => `<span class="tag ${p === g.top ? 'top' : p === g.last ? 'last' : ''}">${p === g.top ? '🥇' : p === g.last ? '💧' : ''}${esc(nameOf(p))}</span>`).join('')}
+      </div>
+    </div>`).join('') : '<div class="empty">記録がありません</div>';
+}
+
+async function delGame(id){
+  if (!confirm('この記録を削除しますか？')) return;
+  loading(true); showErr('');
+  try { await apiPost('deleteGame', { gameId: id }); await reload(); }
+  catch (e) { showErr(e.message); } finally { loading(false); }
+}
+
+function renderStats(){
+  const y = $('sYear').value, sort = $('sSort').value;
+  const st = {};
+  S.games.filter(g => !y || g.date.startsWith(y)).forEach(g => g.players.forEach(p => {
+    st[p] = st[p] || { id: p, n: 0, top: 0, last: 0 };
+    st[p].n++; if (p === g.top) st[p].top++; if (p === g.last) st[p].last++;
+  }));
+  const rows = Object.values(st).map(r => Object.assign(r, { topRate: r.top / r.n, lastRate: r.last / r.n }));
+  const cmp = {
+    topRate: (a, b) => b.topRate - a.topRate || b.n - a.n,
+    top: (a, b) => b.top - a.top || b.topRate - a.topRate,
+    lastRate: (a, b) => a.lastRate - b.lastRate || b.n - a.n,
+    n: (a, b) => b.n - a.n,
+  }[sort];
+  rows.sort(cmp);
+  const pct = v => (v * 100).toFixed(1) + '%';
+  $('statsBody').innerHTML = rows.length ? rows.map(r =>
+    `<tr><td class="n">${esc(nameOf(r.id))}</td><td>${r.n}</td><td>${r.top}</td><td>${r.last}</td><td>${pct(r.topRate)}</td><td>${pct(r.lastRate)}</td></tr>`).join('')
+    : '<tr><td colspan="6" class="empty">記録がありません</td></tr>';
+}
+
+/* ---------- 会員 ---------- */
+function renderMembers(){
+  $('memberList').innerHTML = S.members.length ? S.members.map(m => `
+    <div class="mem"><span>${esc(m.name)}${m.id === S.meId ? '（あなた）' : ''}</span>
+    <span class="id">${m.id}${m.linked ? ' ・LINE連携' : ''}</span></div>`).join('')
+    : '<div class="empty">会員がいません</div>';
+  $('addMemberCard').style.display = S.meId ? 'block' : 'none';
+}
+async function addOtherMember(){
+  loading(true); showErr('');
+  try { await apiPost('addMember', { name: $('newMemberName').value, self: false }); $('newMemberName').value = ''; await reload(); }
+  catch (e) { showErr(e.message); } finally { loading(false); }
+}
+
+/* ---------- タブ ---------- */
+document.querySelectorAll('nav button').forEach(b => b.addEventListener('click', () => {
+  document.querySelectorAll('nav button').forEach(x => x.classList.toggle('on', x === b));
+  document.querySelectorAll('section').forEach(s => s.classList.toggle('on', s.id === 'tab-' + b.dataset.tab));
+  showErr('');
+}));
+
+boot();
+</script>
+</body>
+</html>
