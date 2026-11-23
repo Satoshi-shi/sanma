@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>三麻 対戦記録</title>
+<title>麻雀王リーグ決定戦</title>
 <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 <style>
   :root{
@@ -74,7 +74,7 @@
 </head>
 <body>
 <header>
-  <h1>🀄 三麻 対戦記録</h1>
+  <h1>🀄 麻雀王リーグ決定戦</h1>
   <div class="me" id="meLabel">読み込み中…</div>
 </header>
 
@@ -200,10 +200,9 @@
       <ol>
         <li>決勝戦以外の麻雀については、人数、ルール、点数計算、開催形式などは自由とする。</li>
         <li>メダルの授受については、以下の共通ルールを適用する。</li>
-        <li>その日の対局参加者のうち、最も順位が高かった者が、最も順位が低かった者からメダル1枚を受け取る。</li>
-        <li>4人打ちの場合、2位・3位はメダルの増減なしとする。</li>
-        <li>3人打ちの場合、2位はメダルの増減なしとする。</li>
-        <li>メダルの移動は1日につき合計1枚とする。</li>
+        <li>大会参加メンバー2名以上が参加している対局をメダル授受の対象とする。大会参加メンバー2名に加え、外部参加者1名または2名が参加する対局についても、メダル授受の対象とする。</li>
+        <li>メダルの授受は、外部参加者を含む当日の対局参加者全員の順位に基づき、最も順位が高かった者が最も順位が低かった者からメダル1枚を受け取るものとする。</li>
+        <li>メダルの授受は1日につき合計1枚とする。</li>
         <li>12月の対局は、決勝戦・自由対局を問わずメダルの増減を行わない。</li>
       </ol>
 
@@ -296,7 +295,7 @@
 
 <script>
 /* ===== 設定（ここを書き換える） ===== */
-const LIFF_ID = '2012648655-9b10lPal';
+onst LIFF_ID = '2012648655-9b10lPal';
 const SUPABASE_URL = 'https://rafeukjpmuiwvvxoypks.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_-Dv7CqKdifp3LgblJpOhXg_4Nvhverg';   // Publishable key（旧 anon key でも可）
 /* ================================== */
@@ -475,7 +474,7 @@ function summaryText(g, withLink){
   }
   let t = `${g.date.replace(/-/g, '/')}　＠${g.place}\n参加：${g.players.map(nameOf).join('・')}\n🥇トップ：${nameOf(g.top)} +1枚${topC}\n💧ラス：${nameOf(g.last)} −1枚${lastC}`;
   if (!inCoinPeriod(g.date, y)) t += `\n※${COIN_TO_MONTH + 1}月の開催はメダル集計の対象外です`;
-  if (withLink) t = `🀄 三麻 対戦記録\n${t}\n\n成績はこちら👇\nhttps://liff.line.me/${LIFF_ID}`;
+  if (withLink) t = `🀄 麻雀王リーグ決定戦\n${t}\n\n成績はこちら👇\nhttps://liff.line.me/${LIFF_ID}`;
   return t;
 }
 
@@ -522,7 +521,7 @@ function renderHistory(){
       </div>
       <div class="place">📍 ${esc(g.place)}　${g.players.length}名</div>
       <div class="ps">
-        ${g.players.map(p => `<span class="tag ${p === g.top ? 'top' : p === g.last ? 'last' : ''}">${p === g.top ? '🥇' : p === g.last ? '💧' : ''}${esc(nameOf(p))}</span>`).join('')}
+        ${g.players.map(p => `<span class="tag ${p === g.top ? 'top' : p === g.last ? 'last' : ''}">${p === g.top ? '🥇トップ：' : p === g.last ? '💧ラス：' : ''}${esc(nameOf(p))}</span>`).join('')}
       </div>
     </div>`).join('') : '<div class="empty">記録がありません</div>';
 }
